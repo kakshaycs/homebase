@@ -9,6 +9,8 @@ your next Google Calendar meeting — with an Arc-style ⌘K command bar over al
 Vanilla JS, no build step, no dependencies, no analytics. Everything is stored locally
 in `chrome.storage.local`; the only network calls are to the APIs you explicitly connect.
 
+![Homebase dashboard](docs/screenshot.png)
+
 ---
 
 ## Setup
@@ -161,6 +163,27 @@ moved instance, cancelled events, all-day events, and `TZID` timezone conversion
 > exported layouts, but treat it like a password. Also, Google **caches** this feed:
 > events created or moved in the last few hours may not appear immediately. Longstanding
 > meetings are accurate; a meeting booked five minutes ago may not be.
+
+### Moving your dashboard to another machine
+The layout lives in `chrome.storage.local`, **not in the repo** — cloning the code on a
+second laptop gives you a fresh, empty dashboard. To carry your setup across:
+
+1. On the old machine: ⚙ Settings → **Export to file** (downloads a `.json`)
+2. On the new one: ⚙ Settings → **Import from file**
+3. Re-enter your GitHub token and calendar URL — those are deliberately never exported
+
+The import verifies the write and reads it back, so it tells you if the save failed
+rather than appearing to work until the next new tab. An *uploaded* wallpaper is not
+included (it is a multi-megabyte data URL); re-pick it on the new machine.
+
+### Small windows
+Below 900px the free canvas is abandoned and panels **stack into a single column** —
+fixed pixel coordinates laid out for a wide screen would otherwise just be clipped.
+Dragging and resizing are disabled while stacked, and your saved positions are left
+untouched, so widening the window restores the layout exactly.
+
+For a window that is merely narrower than usual, **✎ Edit → ⤢ Fit panels to this window**
+reflows everything to the current width instead.
 
 ### Locking the layout
 The **🔓 / 🔒** button in the topbar (or `l`) locks the dashboard: panels can no longer be

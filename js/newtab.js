@@ -1,5 +1,5 @@
-import { state, load, save, seedFromBookmarks, THEMES, PANEL_TYPES, WALLPAPERS, wallpaperSrc } from './store.js';
-import { renderAll, addPanel, refreshAllGithub, closeMenu, addLinkToActivePanel } from './panels.js';
+import { state, load, save, seedFromBookmarks, THEMES, PANEL_TYPES, WALLPAPERS, wallpaperSrc, storageBytes } from './store.js';
+import { renderAll, addPanel, refreshAllGithub, closeMenu, addLinkToActivePanel, fitToWindow, isStacked } from './panels.js';
 import { loadLibrary } from './library.js';
 import { openCmd, closeCmd } from './search.js';
 import * as gh from './github.js';
@@ -29,6 +29,10 @@ document.getElementById('addBtn').addEventListener('click', e => {
     }));
   }
   ctxmenu.appendChild(el('hr'));
+  ctxmenu.appendChild(el('button', {
+    text: '⤢  Fit panels to this window',
+    onclick: () => { closeMenu(); fitToWindow(); }
+  }));
   ctxmenu.appendChild(el('button', {
     text: '🖼  Wallpaper…',
     onclick: () => { closeMenu(); openSettings('wallpaperPicker'); }
@@ -306,29 +310,115 @@ document.getElementById('gcalCopy').addEventListener('click', e => {
   setTimeout(() => { e.target.textContent = 'Copy'; }, 1200);
 });
 
-document.getElementById('exportBtn').addEventListener('click', () => {
-  const safe = {
-    ...state,
-    settings: { ...state.settings, ghToken: '' },
-    panels: state.panels.map(p => p.cal?.icsUrl ? { ...p, cal: { ...p.cal, icsUrl: '' } } : p)
+function toast(message, kind = 'info') {
+  const box = document.getElementById('toast');
+  box.textContent = message;
+  box.className = 'toast ' + kind;
+  box.hidden = false;
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { box.hidden = true; }, 6000);
+}
+window.addEventListener('homebase:error', e => toast(e.detail, 'error'));
+
+/** Layout minus anything secret or too big to move as text. */
+function exportPayload() {
+  const settings = { ...state.settings, ghToken: '' };
+  let droppedWallpaper = false;
+  if ((settings.wallpaper || '').startsWith('data:')) {
+    settings.wallpaper = '';                 // a multi-MB base64 image cannot travel in JSON
+    droppedWallpaper = true;
+  }
+  return {
+    payload: {
+      ...state,
+      settings,
+      panels: state.panels.map(p => (p.cal?.icsUrl ? { ...p, cal: { ...p.cal, icsUrl: '' } } : p))
+    },
+    droppedWallpaper
   };
-  ioBox.value = JSON.stringify(safe, null, 2);
-  ioBox.select();
+}
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const { payload, droppedWallpaper } = exportPayload();
+  const json = JSON.stringify(payload, null, 2);
+  ioBox.value = json;
+
+  const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `homebase-layout-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  const kb = Math.round(json.length / 1024);
+  ghStatus.textContent = `Exported ${payload.panels.length} panels (${kb} KB)`
+    + (droppedWallpaper ? ' — uploaded wallpaper not included, re-pick it on the other machine.' : '')
+    + ' GitHub token and iCal URL are never exported.';
 });
 
-document.getElementById('importBtn').addEventListener('click', () => {
+document.getElementById('importFileBtn').addEventListener('click', () => document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change', async e => {
+  const file = e.target.files?.[0];
+  if (!file) return;
   try {
-    const data = JSON.parse(ioBox.value);
-    if (!Array.isArray(data.panels)) throw new Error('missing panels[]');
-    state.panels = data.panels;
-    if (data.settings) Object.assign(state.settings, data.settings, { ghToken: state.settings.ghToken });
-    save();
-    renderAll();
-    ghStatus.textContent = `Imported ${data.panels.length} panels.`;
+    applyImport(await file.text());
   } catch (err) {
-    ghStatus.textContent = 'Import failed: ' + err.message;
+    ghStatus.textContent = 'Import failed: ' + (err.message || err);
+  } finally {
+    e.target.value = '';
   }
 });
+
+/** Import, then VERIFY it actually persisted — the old version reported success
+    whether or not the storage write went through. */
+function applyImport(text) {
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    ghStatus.textContent = 'Import failed: that is not valid JSON (was the whole file copied?)';
+    return;
+  }
+  if (!data || !Array.isArray(data.panels)) {
+    ghStatus.textContent = 'Import failed: no "panels" array in that file.';
+    return;
+  }
+  if (!data.panels.length) {
+    ghStatus.textContent = 'Import failed: that layout has zero panels.';
+    return;
+  }
+
+  const keptToken = state.settings.ghToken;
+  state.panels = data.panels;
+  if (data.settings) Object.assign(state.settings, data.settings, { ghToken: keptToken });
+
+  const bytes = storageBytes();
+  if (bytes > 9 * 1024 * 1024) {
+    ghStatus.textContent = `Import too large (${Math.round(bytes / 1048576)} MB) — Chrome's limit is 10 MB.`;
+    return;
+  }
+
+  chrome.storage.local.set({ dashboard: state }, () => {
+    const err = chrome.runtime.lastError;
+    if (err) {
+      ghStatus.textContent = `Import failed to save: ${err.message}`;
+      return;
+    }
+    chrome.storage.local.get('dashboard', got => {
+      const n = got?.dashboard?.panels?.length ?? 0;
+      applyTheme(state.settings.theme);
+      applyWallpaper();
+      paintGreeting();
+      paintLock();
+      renderAll();
+      ghStatus.textContent = n === data.panels.length
+        ? `Imported and saved ${n} panels. Re-enter your GitHub token and calendar URL.`
+        : `Imported ${data.panels.length} but only ${n} were stored — check the console.`;
+    });
+  });
+}
+
+document.getElementById('importBtn').addEventListener('click', () => applyImport(ioBox.value));
 
 document.getElementById('resetBtn').addEventListener('click', async () => {
   if (!confirm('Reset the dashboard and rebuild panels from your bookmark folders?')) return;

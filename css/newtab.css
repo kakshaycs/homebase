@@ -969,6 +969,64 @@ body.has-wallpaper::before { opacity: .4; }   /* soften the gradient blobs over 
 .panel .panel-count,
 .panel .bgroup-count { background: color-mix(in srgb, var(--fg) 12%, transparent); }
 
+
+/* ==================================================== narrow windows ==== */
+/* Below 900px the free canvas stops making sense: fixed pixel coordinates
+   laid out for a wide screen just get clipped. Panels stack into a single
+   readable column instead, and their saved x/y are left untouched so the
+   layout returns intact when the window widens again. */
+
+@media (max-width: 900px) {
+  .library { display: none; }
+
+  #topbar { padding: 10px 12px; gap: 8px; }
+  .greeting { display: none; }
+  .omni { flex: 1 1 auto; margin: 0; }
+  .omni kbd { display: none; }
+
+  .canvas {
+    display: flex; flex-direction: column; gap: 12px;
+    padding: 12px 12px 90px;
+    isolation: auto;
+  }
+  .panel {
+    position: static !important;
+    left: auto !important; top: auto !important;
+    width: auto !important; height: auto !important;
+    z-index: auto !important;
+    min-height: 110px;
+    flex: 0 0 auto;
+  }
+  .panel-body { max-height: 62vh; }
+  .todo, .cal, .clock, .quote, .wx { height: auto; min-height: 0; }
+  .rz { display: none; }
+  .panel-head { cursor: default; }
+
+  .board-grid { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  #topbar { flex-wrap: wrap; }
+  .top-actions .btn { padding: 7px 10px; font-size: 12px; }
+  .board-grid { grid-template-columns: 1fr; }
+  .wx-days { gap: 2px; }
+  .wx-dtemp { font-size: 10.5px; }
+  .cal-meta { font-size: 11.5px; }
+  .panel[data-layout="grid"] .items { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); }
+}
+
+/* the toast used for storage / save errors */
+.toast {
+  position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+  z-index: 2000; max-width: min(560px, 92vw);
+  padding: 10px 16px; border-radius: 10px;
+  background: color-mix(in srgb, var(--card-solid) 95%, transparent);
+  border: 1px solid var(--line); box-shadow: var(--shadow-lift);
+  font-size: 12.5px; line-height: 1.45;
+}
+.toast[hidden] { display: none !important; }
+.toast.error { border-color: #e5484d; color: #e5484d; }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }

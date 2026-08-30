@@ -64,11 +64,31 @@ export function uid() {
 }
 
 let saveTimer = null;
+
+/** Storage writes can fail (quota, corrupt state). Never let that be silent —
+    a swallowed failure looks like "everything works until the next new tab". */
 export function save() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    chrome.storage.local.set({ dashboard: state });
+    try {
+      chrome.storage.local.set({ dashboard: state }, () => {
+        const err = chrome.runtime.lastError;
+        if (err) reportError(`Could not save: ${err.message}`);
+      });
+    } catch (err) {
+      reportError(`Could not save: ${err.message || err}`);
+    }
   }, 150);
+}
+
+function reportError(message) {
+  console.error('Homebase:', message);
+  window.dispatchEvent(new CustomEvent('homebase:error', { detail: message }));
+}
+
+/** Approximate stored size, so the UI can warn before hitting the 10 MB quota. */
+export function storageBytes() {
+  try { return new Blob([JSON.stringify(state)]).size; } catch { return 0; }
 }
 
 export async function load() {

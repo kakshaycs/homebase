@@ -112,8 +112,10 @@
       </label>
 
       <div class="field row">
-        <button id="exportBtn" class="btn">Export layout</button>
-        <button id="importBtn" class="btn">Import layout</button>
+        <button id="exportBtn" class="btn">Export to file</button>
+        <button id="importFileBtn" class="btn">Import from file</button>
+        <input id="importFile" type="file" accept="application/json,.json" hidden>
+        <button id="importBtn" class="btn">Import from box</button>
         <button id="resetBtn" class="btn danger">Reset dashboard</button>
       </div>
 
@@ -127,6 +129,7 @@
   </div>
 
   <div id="ctxmenu" class="ctxmenu" hidden></div>
+  <div id="toast" class="toast" hidden></div>
 
   <script type="module" src="js/newtab.js"></script>
 </body>

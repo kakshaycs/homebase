@@ -27,6 +27,9 @@ const generation = new Map();
 const bumpGen = id => { const n = (generation.get(id) || 0) + 1; generation.set(id, n); return n; };
 const isStale = (id, mine) => generation.get(id) !== mine;
 const filterOf = panel => filters.get(panel.id) || '';
+
+/** Below this width panels are stacked by CSS, so moving them is meaningless. */
+export const isStacked = () => window.matchMedia('(max-width: 900px)').matches;
 const hits = (text, q) => !q || String(text).toLowerCase().includes(q);
 
 export function toggleFilter(panel, node) {
@@ -1428,7 +1431,7 @@ function wireDropZone(panel, node, body) {
 /* ------------------------------------------------------- move + resize */
 
 function startDrag(e, panel, node) {
-  if (state.settings.locked) return;                       // layout is locked
+  if (state.settings.locked || isStacked()) return;        // locked, or stacked on a narrow window
   if (e.target.closest('.icon-btn') || e.target.isContentEditable) return;
   if (e.button !== 0) return;
   e.preventDefault();
@@ -1456,7 +1459,7 @@ function startDrag(e, panel, node) {
 }
 
 function startResize(e, panel, node, dir) {
-  if (state.settings.locked) return;
+  if (state.settings.locked || isStacked()) return;
   e.preventDefault();
   e.stopPropagation();
   const grid = state.settings.gridSize || 1;
@@ -1730,4 +1733,25 @@ export function addLinkToActivePanel() {
   if (!target || target.panel.type !== 'links') return;
   bringToFront(target.panel, target.node);
   showAddForm(target.panel, target.node);
+}
+
+/** Reflow every panel into the current canvas width, keeping reading order. */
+export function fitToWindow() {
+  const W = canvas.clientWidth;
+  const PAD = 16, GAP = 14;
+  const avail = Math.max(220, W - 2 * PAD);
+
+  const ordered = [...state.panels].sort((a, b) => (a.y - b.y) || (a.x - b.x));
+  let x = PAD, y = PAD, rowH = 0;
+
+  for (const p of ordered) {
+    p.w = Math.min(p.w, avail);
+    if (x > PAD && x + p.w > W - PAD) { x = PAD; y += rowH + GAP; rowH = 0; }
+    p.x = x;
+    p.y = y;
+    x += p.w + GAP;
+    rowH = Math.max(rowH, p.h);
+  }
+  save();
+  renderAll();
 }
