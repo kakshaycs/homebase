@@ -9,7 +9,9 @@ your next Google Calendar meeting — with an Arc-style ⌘K command bar over al
 Vanilla JS, no build step, no dependencies, no analytics. Everything is stored locally
 in `chrome.storage.local`; the only network calls are to the APIs you explicitly connect.
 
-![Homebase dashboard](docs/screenshot.png)
+![Homebase dashboard](docs/screenshot.jpg)
+
+<sub>Real dashboard; panel contents are pixelated because the source screenshot contained work data.</sub>
 
 ---
 
