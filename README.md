@@ -189,7 +189,13 @@ narrow window is a temporary view and the full-size layout returns the moment yo
 it again. Dragging and resizing account for the scale, and are clamped so overflow cannot
 be created in the first place.
 
-Below 900px the free canvas is abandoned and panels **stack into a single column** —
+**Browser zoom is respected.** `Ctrl/Cmd +` makes everything bigger, as it should — the
+auto-fit and the stacked breakpoint both step aside while you are zoomed, so zooming can
+never rearrange the layout (it used to fight you: the auto-fit cancelled your zoom out
+again). Pan horizontally while zoomed; `Ctrl/Cmd 0` then `0` returns to normal.
+
+Below 900px, **at normal zoom**, the free canvas is abandoned and panels **stack into a
+single column** —
 fixed pixel coordinates laid out for a wide screen would otherwise just be clipped.
 Dragging and resizing are disabled while stacked, and your saved positions are left
 untouched, so widening the window restores the layout exactly.

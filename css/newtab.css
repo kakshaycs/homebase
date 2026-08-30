@@ -984,12 +984,15 @@ body.has-wallpaper::before { opacity: .4; }   /* soften the gradient blobs over 
   .omni { flex: 1 1 auto; margin: 0; }
   .omni kbd { display: none; }
 
-  .canvas {
+  /* Guarded on :not(.user-zoomed): zooming in shrinks the viewport in CSS
+     pixels, and flipping to the stacked layout at that point is not what the
+     user asked for — they wanted bigger content, not a different design. */
+  body:not(.user-zoomed) .canvas {
     display: flex; flex-direction: column; gap: 12px;
     padding: 12px 12px 90px;
     isolation: auto;
   }
-  .panel {
+  body:not(.user-zoomed) .panel {
     position: static !important;
     left: auto !important; top: auto !important;
     width: auto !important; height: auto !important;
@@ -997,13 +1000,20 @@ body.has-wallpaper::before { opacity: .4; }   /* soften the gradient blobs over 
     min-height: 110px;
     flex: 0 0 auto;
   }
-  .panel-body { max-height: 62vh; }
-  .todo, .cal, .clock, .quote, .wx { height: auto; min-height: 0; }
-  .rz { display: none; }
-  .panel-head { cursor: default; }
+  body:not(.user-zoomed) .panel-body { max-height: 62vh; }
+  body:not(.user-zoomed) .todo,
+  body:not(.user-zoomed) .cal,
+  body:not(.user-zoomed) .clock,
+  body:not(.user-zoomed) .quote,
+  body:not(.user-zoomed) .wx { height: auto; min-height: 0; }
+  body:not(.user-zoomed) .rz { display: none; }
+  body:not(.user-zoomed) .panel-head { cursor: default; }
 
   .board-grid { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); }
 }
+
+/* While the user is zoomed we stop auto-fitting, so let them pan instead. */
+body.user-zoomed .canvas { overflow-x: auto; }
 
 @media (max-width: 560px) {
   #topbar { flex-wrap: wrap; }

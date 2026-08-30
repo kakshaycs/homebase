@@ -1,5 +1,5 @@
 import { state, load, save, seedFromBookmarks, THEMES, PANEL_TYPES, WALLPAPERS, wallpaperSrc, storageBytes } from './store.js';
-import { renderAll, addPanel, refreshAllGithub, closeMenu, addLinkToActivePanel, fitWidth } from './panels.js';
+import { renderAll, addPanel, refreshAllGithub, closeMenu, addLinkToActivePanel, fitWidth, resetZoomBaseline } from './panels.js';
 import { loadLibrary } from './library.js';
 import { openCmd, closeCmd } from './search.js';
 import * as gh from './github.js';
@@ -445,6 +445,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'n') addPanel('links');
   if (e.key === 'b') setLibrary(!state.settings.libraryHidden);
   if (e.key === 'l') { state.settings.locked = !state.settings.locked; save(); paintLock(); }
+  if (e.key === '0') { resetZoomBaseline(); fitWidth(); }   // after Ctrl+0 restores 100%
   if (e.key === 'r') refreshAllGithub();
 });
 

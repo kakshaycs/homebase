@@ -29,7 +29,7 @@ const isStale = (id, mine) => generation.get(id) !== mine;
 const filterOf = panel => filters.get(panel.id) || '';
 
 /** Below this width panels are stacked by CSS, so moving them is meaningless. */
-export const isStacked = () => window.matchMedia('(max-width: 900px)').matches;
+export const isStacked = () => window.matchMedia('(max-width: 900px)').matches && !userHasZoomed();
 const hits = (text, q) => !q || String(text).toLowerCase().includes(q);
 
 export function toggleFilter(panel, node) {
@@ -1756,6 +1756,21 @@ export function addLinkToActivePanel() {
 
 /* ---------------------------------------------------- keep inside the width */
 
+/* Browser zoom changes devicePixelRatio. If the user has deliberately zoomed we
+   must get out of the way: no auto-fit (it would cancel their zoom out again)
+   and no stacked breakpoint (a zoomed-in viewport is narrow in CSS pixels, but
+   the user wanted bigger content, not a different layout). */
+let basePixelRatio = window.devicePixelRatio || 1;
+
+export function resetZoomBaseline() {
+  basePixelRatio = window.devicePixelRatio || 1;
+  document.body.classList.remove('user-zoomed');
+}
+
+export function userHasZoomed() {
+  return Math.abs((window.devicePixelRatio || 1) - basePixelRatio) > 0.02;
+}
+
 export function currentZoom() {
   const z = parseFloat(canvas.style.zoom);
   return Number.isFinite(z) && z > 0 ? z : 1;
@@ -1765,13 +1780,19 @@ export function currentZoom() {
     geometry. Your saved x/y/w/h are the source of truth and are never touched,
     so a narrow window is a temporary view, not a permanent change. */
 export function fitWidth() {
-  if (isStacked()) { canvas.style.zoom = ''; return; }
+  const zoomed = userHasZoomed();
+  document.body.classList.toggle('user-zoomed', zoomed);
+
+  // Hands off while the user is zooming: their zoom wins, scrolling is fine.
+  if (zoomed || isStacked() || !state.panels.length) {
+    canvas.style.zoom = '';
+    return;
+  }
 
   const viewport = canvas.parentElement?.clientWidth || 0;
-  if (!viewport || !state.panels.length) return;
+  if (!viewport) return;
 
   const content = Math.max(...state.panels.map(p => p.x + p.w)) + 24;
   const z = Math.min(1, viewport / content);
-
   canvas.style.zoom = z < 0.995 ? String(Math.max(0.45, z)) : '';
 }
