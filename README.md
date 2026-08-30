@@ -291,7 +291,7 @@ An empty panel shows a dashed **click here to paste a URL** target.
 Open **⚙ Settings**, paste a classic PAT with the `repo` scope plus your username.
 The panel then shows **Review requested / Assigned to me / Created by me**, each
 toggleable from the panel menu, plus an optional custom query
-(e.g. `org:syfe review:required`). Refreshes every 5 min, `⟳` for now, `r` refreshes all.
+(e.g. `org:my-org review:required`). Refreshes every 5 min, `⟳` for now, `r` refreshes all.
 
 The token lives in `chrome.storage.local` and is only ever sent to `api.github.com`.
 It is stripped from exported layouts.

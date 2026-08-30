@@ -1546,7 +1546,7 @@ function openMenu(panel, node, x, y) {
       });
     }
     add('Set custom query…', () => {
-      const q = prompt('Extra GitHub search query (e.g. org:syfe review:required)', panel.gh.extraQuery || '');
+      const q = prompt('Extra GitHub search query (e.g. org:my-org review:required)', panel.gh.extraQuery || '');
       if (q === null) return;
       panel.gh.extraQuery = q;
       save(); gh.invalidate(panel.id); renderBody(panel, node);
