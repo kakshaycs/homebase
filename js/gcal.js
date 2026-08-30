@@ -52,11 +52,10 @@ function authUrl(interactive) {
     const known = (state.settings.gcalAccount || '').trim();
     if (known) u.searchParams.set('login_hint', known);
   } else {
-    // With several Google accounts in the browser, Google otherwise picks the
-    // default silently. Force the chooser every time.
+    // Force the chooser, and deliberately send NO login_hint: a hint makes
+    // Google honour that account and skip the chooser entirely, which is
+    // exactly wrong when the remembered account is the one you want to change.
     u.searchParams.set('prompt', 'select_account');
-    const hint = (state.settings.gcalAccount || '').trim();
-    if (hint) u.searchParams.set('login_hint', hint);
   }
   return u.toString();
 }
@@ -81,12 +80,21 @@ async function loadCached() {
 }
 
 /** Get a usable token. interactive=false never opens a window. */
-export async function getToken({ interactive = false } = {}) {
+export async function getToken({ interactive = false, force = false } = {}) {
   if (!isConfigured()) throw new Error('No Google client ID configured');
   if (!identityReady()) throw new Error('Reload the extension at chrome://extensions to enable Google sign-in');
 
-  const cached = await loadCached();
-  if (cached && cached.expires > Date.now()) return cached.access_token;
+  // force = "the user asked to sign in / switch account". Skipping this check
+  // is the whole point: a cached token for the wrong account would otherwise be
+  // returned and no chooser would ever appear.
+  if (!force) {
+    const cached = await loadCached();
+    if (cached && cached.expires > Date.now()) return cached.access_token;
+  } else {
+    // Forget the remembered address too, so the account that actually answers
+    // is re-read afterwards instead of the stale one lingering as a hint.
+    await signOut({ forgetAccount: true });
+  }
 
   if (inflight) return inflight;
   inflight = (async () => {
@@ -112,9 +120,20 @@ export async function getToken({ interactive = false } = {}) {
   return inflight;
 }
 
-export async function signOut({ forgetAccount = false } = {}) {
+export async function signOut({ forgetAccount = false, revoke = false } = {}) {
+  const dying = token?.access_token || (await loadCached())?.access_token;
   token = null;
   await chrome.storage.local.remove('gcalToken');
+
+  if (revoke && dying) {
+    // Drop the grant at Google's end too, so the next flow is a clean choice.
+    try {
+      await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(dying)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
+    } catch { /* best effort */ }
+  }
   if (forgetAccount) {
     state.settings.gcalAccount = '';
     save();

@@ -678,7 +678,7 @@ function calendarSetup(panel, node, message) {
     save();
     status.textContent = 'Opening Google sign-in…';
     try {
-      await gcal.getToken({ interactive: true });
+      await gcal.getToken({ interactive: true, force: true });
       renderBody(panel, node);
     } catch (err) {
       status.textContent = String(err.message || err);
@@ -789,6 +789,7 @@ function connectScreen(panel, node, message) {
   const diag = el('div', { class: 'cal-diag', hidden: 'hidden' }, [
     el('div', {}, [el('b', { text: 'identity API: ' }), document.createTextNode(gcal.identityReady() ? 'available' : 'MISSING — reload the extension')]),
     el('div', {}, [el('b', { text: 'client ID: ' }), document.createTextNode(id ? `…${id.slice(-28)}` : 'not set')]),
+    el('div', {}, [el('b', { text: 'remembered account: ' }), document.createTextNode(state.settings.gcalAccount || 'none')]),
     el('div', {}, [el('b', { text: 'redirect URI: ' }), document.createTextNode(gcal.redirectUri())]),
     el('div', {}, [el('b', { text: 'last step: ' }), document.createTextNode(gcal.diagnostics.lastStep || '—')]),
     el('div', { class: 'cal-diag-err' }, [el('b', { text: 'last error: ' }), document.createTextNode(gcal.diagnostics.lastError || '—')])
@@ -811,7 +812,7 @@ function connectScreen(panel, node, message) {
         onclick: async e => {
           e.target.textContent = 'Opening…';
           try {
-            await gcal.getToken({ interactive: true });
+            await gcal.getToken({ interactive: true, force: true });
             renderBody(panel, node);
           } catch (err) {
             connectScreen(panel, node, String(err.message || err));
@@ -1593,15 +1594,18 @@ function openMenu(panel, node, x, y) {
         ctxmenu.appendChild(el('div', { class: 'menu-label', text: state.settings.gcalAccount }));
       }
       add('Switch Google account…', async () => {
-        await gcal.signOut({ forgetAccount: true });
+        await gcal.signOut({ forgetAccount: true, revoke: true });
+        cfg.calendarId = 'primary';
+        cfg.accountEmail = '';
+        save();
         try {
-          await gcal.getToken({ interactive: true });     // prompt=select_account
+          await gcal.getToken({ interactive: true, force: true });
         } catch { /* the panel shows the error */ }
         renderBody(panel, node);
       });
       add('Choose calendar…', () => chooseCalendar(panel, node));
       add('Google account settings…', () => calendarSetup(panel, node));
-      add('Sign out of Google', async () => { await gcal.signOut({ forgetAccount: true }); renderBody(panel, node); });
+      add('Sign out of Google', async () => { await gcal.signOut({ forgetAccount: true, revoke: true }); renderBody(panel, node); });
       add('Use an iCal URL instead', () => { cfg.mode = 'ics'; save(); renderBody(panel, node); });
     } else {
       add('Change calendar URL…', () => icsSetup(panel, node));

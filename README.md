@@ -136,10 +136,15 @@ Menu: the connected account is shown at the top, plus **Switch Google account…
 **Choose calendar…** (lists every calendar you can read), hide declined, hide all-day,
 look ahead 6/12/24h, sign out.
 
-> **Several Google accounts in one browser?** Sign-in forces the account chooser
-> (`prompt=select_account`) rather than letting Google pick the default silently, and
-> the chosen account is remembered as a `login_hint` for silent token renewals. If it
-> ever latches onto the wrong one, use **Switch Google account…**.
+> **Several Google accounts in one browser?** Every explicit sign-in forces Google's
+> account chooser: `prompt=select_account`, **no `login_hint`** (a hint makes Google skip
+> the chooser), and the cached token is discarded first — otherwise a token for the wrong
+> account is simply reused and no window ever opens. **Switch Google account…** also
+> revokes the old grant at Google's end, so you get a clean choice.
+>
+> The connected address is read back from the primary calendar and shown at the top of
+> the panel menu, and is used as a `login_hint` only for *silent* hourly renewals, to
+> stop them drifting to the browser's default account.
 
 > Because the consent screen is in *Testing*, Google shows an "unverified app" warning —
 > **Advanced → Go to app** to proceed. That is expected for a personal-use extension.
