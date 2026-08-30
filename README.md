@@ -26,10 +26,10 @@ git clone https://github.com/kakshaycs/homebase.git
 3. Click **Load unpacked** and select the cloned folder
 4. Open a new tab — the first run builds a starter layout from your bookmark folders
 
-> **Don't move or rename the folder after loading it.** Chrome derives an unpacked
-> extension's ID from its absolute path, and `chrome.storage.local` is scoped per ID —
-> moving it mints a new ID, wipes your layout and settings, and breaks the Google OAuth
-> redirect URI. If you must move it: Settings → **Export layout** first.
+> **The extension ID is pinned.** `manifest.json` carries a `key`, so Chrome always
+> assigns the same ID no matter where the folder lives or which machine it is on. That
+> means the folder can be moved without wiping `chrome.storage.local`, and the Google
+> OAuth redirect URI only ever needs registering once.
 
 After editing any file, press ↻ on the extension's card at `chrome://extensions`.
 
@@ -124,7 +124,9 @@ One-time setup at [console.cloud.google.com](https://console.cloud.google.com):
 3. **OAuth consent screen** → *External* → add your own address under **Test users**
 4. **Credentials → Create credentials → OAuth client ID → Web application**
 5. Under **Authorised redirect URIs**, add the URI the panel shows (Copy button next
-   to it) — it looks like `https://<extension-id>.chromiumapp.org/`
+   to it). Thanks to the `key` pinned in `manifest.json`, this is **the same on every
+   machine**, so you only register it once:
+   `https://hhmpnnbmeeanjjelfoidbeplmondeeef.chromiumapp.org/`
 6. Paste the generated **Client ID** into the panel and hit **Connect**
 
 No client secret is involved: this uses `chrome.identity.launchWebAuthFlow` with the
@@ -136,6 +138,10 @@ Menu: the connected account is shown at the top, plus **Switch Google account…
 **Choose calendar…** (lists every calendar you can read), hide declined, hide all-day,
 look ahead 6/12/24h, sign out.
 
+> **"The user did not approve access"?** Chrome reports a Google-side error page
+> identically to a real cancellation. Nine times out of ten it means the redirect URI
+> shown in the panel's diagnostics is not registered on your OAuth client.
+>
 > **Several Google accounts in one browser?** Every explicit sign-in forces Google's
 > account chooser: `prompt=select_account`, **no `login_hint`** (a hint makes Google skip
 > the chooser), and the cached token is discarded first — otherwise a token for the wrong

@@ -3,6 +3,7 @@
   "name": "Homebase",
   "version": "2.0.0",
   "description": "Everything you open, in one place — a drag-and-drop new tab with resizable bookmark panels, a GitHub PR feed, and a fast command bar.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArm8I9JxW5aqrgAqaDC65htf9+sDaJF0WUAgUU+Vm2DEv14VBHVQgBNEAGLpLC4t8AwEGMWpE2SDhGcXvsTao1dywBL6QolG9Sgy0TtNkd8l+0TcXs1O9Ye7Hd2YsZimgDv61HLt+EYJcm7V5wm5HOkRSUUbbfUo1N05HjTE2UnXYJFEaEpOYQ+oiczi5jmS/w3CZ8Q6jT/LFOEbWg4KFTVGfcV09uaCFAO00/xafWbEqwP1rxweSJdpbadtXFMp2tPbBcxNCs+roSLTGCAhTN6jM8FKAXVCzC4RaTa6jdVCwtlVppTLyBmJV90MVlwxYvWCyf9SdRjhQhVt7f18pmwIDAQAB",
   "permissions": [
     "bookmarks",
     "favicon",

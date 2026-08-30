@@ -111,8 +111,16 @@ export async function getToken({ interactive = false, force = false } = {}) {
       return token.access_token;
     } catch (err) {
       const runtime = chrome.runtime.lastError?.message;
-      diagnostics.lastError = String(err?.message || runtime || err);
-      throw new Error(diagnostics.lastError);
+      let msg = String(err?.message || runtime || err);
+      if (/did not approve|cancel/i.test(msg)) {
+        // Chrome reports a Google-side error page the same way as a real
+        // cancellation, and by far the most common cause is an unregistered
+        // redirect URI.
+        msg += ` — if you saw a Google error page rather than the account chooser, add `
+             + `${redirectUri()} to "Authorised redirect URIs" on your OAuth client.`;
+      }
+      diagnostics.lastError = msg;
+      throw new Error(msg);
     } finally {
       inflight = null;
     }
