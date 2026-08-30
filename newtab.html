@@ -99,11 +99,13 @@
       </label>
 
       <div class="field">
-        <span>Redirect URI <em>(read-only — derived from the extension ID. Copy it into “Authorised redirect URIs” on your Google Cloud OAuth client; it cannot be changed here.)</em></span>
+        <span>Redirect URI <em>(must match “Authorised redirect URIs” on your OAuth client)</em></span>
         <div class="copy-row">
-          <input id="gcalRedirect" class="copy-field" type="text" readonly spellcheck="false">
+          <input id="gcalRedirect" class="copy-field" type="text" spellcheck="false" placeholder="https://&lt;extension-id&gt;.chromiumapp.org/">
           <button id="gcalCopy" class="btn" type="button">Copy</button>
+          <button id="gcalRedirectReset" class="btn" type="button" title="Back to the ID-derived default">Reset</button>
         </div>
+        <em id="gcalRedirectNote" class="wall-note"></em>
       </div>
 
       <label class="field">

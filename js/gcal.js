@@ -11,18 +11,39 @@ const SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
 const API = 'https://www.googleapis.com/calendar/v3';
 
 let token = null;          // { access_token, expires }
-let inflight = null;
 
 /** Surfaced in the panel so a failed sign-in says what actually went wrong. */
 export const diagnostics = { lastStep: '', lastError: '' };
 
-export function redirectUri() {
-  // chrome.identity is undefined until the extension is reloaded with the
-  // "identity" permission — fall back to the documented URL shape.
+/** What Chrome derives from the extension ID — always a valid interception target. */
+export function derivedRedirectUri() {
   try {
     if (chrome.identity?.getRedirectURL) return chrome.identity.getRedirectURL();
-  } catch { /* fall through */ }
+  } catch { /* chrome.identity is undefined until the extension is reloaded */ }
   return `https://${chrome.runtime.id}.chromiumapp.org/`;
+}
+
+/** The URI actually sent to Google — a user override wins if one is set. */
+export function redirectUri() {
+  const override = (state.settings.gcalRedirect || '').trim();
+  return override || derivedRedirectUri();
+}
+
+/** Chrome only intercepts redirects on its own chromiumapp.org origin, so an
+    override pointing anywhere else can never complete the flow. Reported, not
+    blocked — the value is the user's call. */
+export function redirectLooksWrong() {
+  const override = (state.settings.gcalRedirect || '').trim();
+  if (!override) return '';
+  try {
+    if (new URL(override).origin !== new URL(derivedRedirectUri()).origin) {
+      return 'Chrome only intercepts redirects on ' + new URL(derivedRedirectUri()).origin
+           + ' — sign-in will hang on any other host.';
+    }
+  } catch {
+    return 'That is not a valid URL.';
+  }
+  return '';
 }
 
 /** Whether the identity API is actually available in this context. */
@@ -80,52 +101,66 @@ async function loadCached() {
 }
 
 /** Get a usable token. interactive=false never opens a window. */
+/* chrome.identity allows exactly one web auth flow at a time. Everything that
+   might launch one goes through this chain, so a silent renewal and a user's
+   "Sign in" can never collide — the second simply queues behind the first. */
+let flowChain = Promise.resolve();
+
+function friendly(message) {
+  if (/one web auth flow/i.test(message)) {
+    return 'A Google sign-in window is already open — finish or close it, then try again.';
+  }
+  return message;
+}
+
+async function launchFlow(interactive) {
+  diagnostics.lastStep = interactive ? 'interactive sign-in' : 'silent token renewal';
+  try {
+    const responseUrl = await chrome.identity.launchWebAuthFlow({
+      url: authUrl(interactive),
+      interactive
+    });
+    if (!responseUrl) throw new Error('Sign-in window closed before finishing');
+    token = parseFragment(responseUrl);
+    await chrome.storage.local.set({ gcalToken: token });
+    diagnostics.lastError = '';
+    return token.access_token;
+  } catch (err) {
+    const runtime = chrome.runtime.lastError?.message;
+    let msg = friendly(String(err?.message || runtime || err));
+    if (/did not approve|cancel/i.test(msg)) {
+      // Chrome reports a Google-side error page the same way as a real
+      // cancellation, and by far the most common cause is an unregistered
+      // redirect URI.
+      msg += ` — if you saw a Google error page rather than the account chooser, add `
+           + `${redirectUri()} to "Authorised redirect URIs" on your OAuth client.`;
+    }
+    diagnostics.lastError = msg;
+    throw new Error(msg);
+  }
+}
+
+/** Get a usable token. interactive=false never opens a window.
+    force=true means "the user asked to sign in": skip the cached token (which
+    may belong to the wrong account) and always show the chooser. */
 export async function getToken({ interactive = false, force = false } = {}) {
   if (!isConfigured()) throw new Error('No Google client ID configured');
   if (!identityReady()) throw new Error('Reload the extension at chrome://extensions to enable Google sign-in');
 
-  // force = "the user asked to sign in / switch account". Skipping this check
-  // is the whole point: a cached token for the wrong account would otherwise be
-  // returned and no chooser would ever appear.
-  if (!force) {
-    const cached = await loadCached();
-    if (cached && cached.expires > Date.now()) return cached.access_token;
-  } else {
-    // Forget the remembered address too, so the account that actually answers
-    // is re-read afterwards instead of the stale one lingering as a hint.
-    await signOut({ forgetAccount: true });
-  }
-
-  if (inflight) return inflight;
-  inflight = (async () => {
-    diagnostics.lastStep = interactive ? 'interactive sign-in' : 'silent token renewal';
-    try {
-      const responseUrl = await chrome.identity.launchWebAuthFlow({
-        url: authUrl(interactive),
-        interactive
-      });
-      if (!responseUrl) throw new Error('Sign-in window closed before finishing');
-      token = parseFragment(responseUrl);
-      await chrome.storage.local.set({ gcalToken: token });
-      diagnostics.lastError = '';
-      return token.access_token;
-    } catch (err) {
-      const runtime = chrome.runtime.lastError?.message;
-      let msg = String(err?.message || runtime || err);
-      if (/did not approve|cancel/i.test(msg)) {
-        // Chrome reports a Google-side error page the same way as a real
-        // cancellation, and by far the most common cause is an unregistered
-        // redirect URI.
-        msg += ` — if you saw a Google error page rather than the account chooser, add `
-             + `${redirectUri()} to "Authorised redirect URIs" on your OAuth client.`;
-      }
-      diagnostics.lastError = msg;
-      throw new Error(msg);
-    } finally {
-      inflight = null;
+  const run = flowChain.catch(() => {}).then(async () => {
+    if (!force) {
+      const cached = await loadCached();
+      if (cached && cached.expires > Date.now()) return cached.access_token;
+    } else {
+      // Forget the remembered address too, so the account that actually answers
+      // is re-read afterwards instead of the stale one lingering as a hint.
+      await signOut({ forgetAccount: true });
     }
-  })();
-  return inflight;
+    return launchFlow(interactive);
+  });
+
+  flowChain = run.catch(() => {});     // keep the chain alive after a failure
+  return run;
 }
 
 export async function signOut({ forgetAccount = false, revoke = false } = {}) {

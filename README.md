@@ -127,6 +127,11 @@ One-time setup at [console.cloud.google.com](https://console.cloud.google.com):
    to it). Thanks to the `key` pinned in `manifest.json`, this is **the same on every
    machine**, so you only register it once:
    `https://hhmpnnbmeeanjjelfoidbeplmondeeef.chromiumapp.org/`
+
+   The field in ⚙ Settings is editable with a **Reset** button, in case you need to point
+   at a different registered value. Note that Chrome only intercepts redirects on its own
+   `chromiumapp.org` origin — a different host is flagged inline and sign-in will hang on
+   it. Leave it blank to use the derived default.
 6. Paste the generated **Client ID** into the panel and hit **Connect**
 
 No client secret is involved: this uses `chrome.identity.launchWebAuthFlow` with the

@@ -54,7 +54,8 @@ const DEFAULTS = {
     ghToken: '',
     ghUser: '',
     gcalClientId: '',
-    gcalAccount: ''
+    gcalAccount: '',
+    gcalRedirect: ''      // blank = use the ID-derived chromiumapp.org URI
   }
 };
 

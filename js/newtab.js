@@ -3,7 +3,7 @@ import { renderAll, addPanel, refreshAllGithub, closeMenu, addLinkToActivePanel,
 import { loadLibrary } from './library.js';
 import { openCmd, closeCmd } from './search.js';
 import * as gh from './github.js';
-import { redirectUri } from './gcal.js';
+import { redirectUri, derivedRedirectUri, redirectLooksWrong } from './gcal.js';
 import { el } from './util.js';
 
 const canvas = document.getElementById('canvas');
@@ -212,6 +212,7 @@ function openSettings(scrollToId) {
   set('wallpaperDim', state.settings.wallpaperDim ?? 55);
   set('gcalClientId', state.settings.gcalClientId || '');
   set('gcalRedirect', redirectUri());
+  paintRedirectNote();
   set('ghToken', state.settings.ghToken || '');
   set('ghUser', state.settings.ghUser || '');
   set('gridSize', state.settings.gridSize || 8);
@@ -299,7 +300,27 @@ document.getElementById('wallFile').addEventListener('change', async e => {
 
 settings.addEventListener('pointerdown', e => { if (e.target === settings) document.getElementById('settingsClose').click(); });
 
-document.getElementById('gcalRedirect').addEventListener('focus', e => e.target.select());
+function paintRedirectNote() {
+  const note = document.getElementById('gcalRedirectNote');
+  const warning = redirectLooksWrong();
+  note.textContent = warning || (state.settings.gcalRedirect ? 'Custom value in use.' : 'Default, derived from the extension ID.');
+  note.style.color = warning ? '#e5484d' : '';
+}
+
+document.getElementById('gcalRedirect').addEventListener('input', e => {
+  const v = e.target.value.trim();
+  // blank means "use the derived default"
+  state.settings.gcalRedirect = (v === derivedRedirectUri()) ? '' : v;
+  save();
+  paintRedirectNote();
+});
+
+document.getElementById('gcalRedirectReset').addEventListener('click', () => {
+  state.settings.gcalRedirect = '';
+  save();
+  document.getElementById('gcalRedirect').value = derivedRedirectUri();
+  paintRedirectNote();
+});
 document.getElementById('gcalCopy').addEventListener('click', e => {
   navigator.clipboard?.writeText(redirectUri());
   e.target.textContent = 'Copied';
