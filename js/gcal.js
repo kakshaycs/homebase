@@ -37,8 +37,8 @@ export function redirectLooksWrong() {
   if (!override) return '';
   try {
     if (new URL(override).origin !== new URL(derivedRedirectUri()).origin) {
-      return 'Chrome only intercepts redirects on ' + new URL(derivedRedirectUri()).origin
-           + ' — sign-in will hang on any other host.';
+      return 'Wrong direction: Chrome can only intercept ' + derivedRedirectUri()
+           + ' — click Reset, then add THAT url to "Authorised redirect URIs" in Google Cloud.';
     }
   } catch {
     return 'That is not a valid URL.';
