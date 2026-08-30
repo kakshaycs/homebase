@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>New Tab</title>
+  <link rel="stylesheet" href="css/newtab.css">
+</head>
+<body>
+  <div id="app">
+    <aside id="library" class="library">
+      <div class="lib-head">
+        <strong>Bookmarks</strong>
+        <button id="libClose" class="icon-btn" title="Hide library">×</button>
+      </div>
+      <input id="libSearch" type="search" placeholder="Filter…" spellcheck="false" autocomplete="off">
+      <div id="libTree" class="lib-tree"></div>
+      <p class="lib-hint">Drag any bookmark or folder onto a panel.</p>
+    </aside>
+
+    <div class="stage">
+      <header id="topbar">
+        <button id="libToggle" class="icon-btn" title="Show bookmark library">☰</button>
+        <div id="greeting" class="greeting"></div>
+
+        <div id="omni" class="omni" role="button" tabindex="0">
+          <span class="omni-icon">⌕</span>
+          <span class="omni-label">Search bookmarks, PRs, or the web</span>
+          <kbd>⌘K</kbd>
+        </div>
+
+        <div class="top-actions">
+          <button id="addBtn" class="btn">✎ Edit</button>
+          <button id="lockBtn" class="icon-btn" title="Lock the layout">🔓</button>
+          <button id="settingsBtn" class="icon-btn" title="Settings">⚙</button>
+        </div>
+      </header>
+
+      <main id="canvas" class="canvas"></main>
+    </div>
+  </div>
+
+  <!-- Arc-style expanding command bar -->
+  <div id="overlay" class="overlay" hidden>
+    <div class="cmd">
+      <div class="cmd-input-row">
+        <span class="cmd-icon">⌕</span>
+        <input id="cmdInput" type="text" placeholder="Search bookmarks, GitHub PRs, or type a URL…"
+               spellcheck="false" autocomplete="off">
+        <kbd>esc</kbd>
+      </div>
+      <div id="cmdResults" class="cmd-results"></div>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div id="settings" class="overlay" hidden>
+    <div class="sheet">
+      <h2>Settings</h2>
+
+      <label class="field">
+        <span>Your name <em>(used in the greeting — leave blank to hide it)</em></span>
+        <input id="userName" type="text" placeholder="Akshay" autocomplete="off">
+      </label>
+
+      <div class="field">
+        <span>Wallpaper</span>
+        <div id="wallpaperPicker" class="wall-picker"></div>
+        <div class="wall-row">
+          <input id="wallpaper" type="text" placeholder="…or paste an https image URL" autocomplete="off" spellcheck="false">
+          <button id="wallUpload" class="btn" type="button">Upload…</button>
+          <input id="wallFile" type="file" accept="image/*" hidden>
+        </div>
+        <em id="wallNote" class="wall-note"></em>
+      </div>
+
+      <label class="field">
+        <span>Wallpaper dimming <em>(keeps text readable over a photo)</em></span>
+        <input id="wallpaperDim" type="range" min="0" max="90" step="5">
+      </label>
+
+      <div class="field">
+        <span>Theme</span>
+        <div id="themePicker" class="theme-picker"></div>
+      </div>
+
+      <label class="field">
+        <span>GitHub token <em>(classic PAT, scope <code>repo</code> — stored locally, never sent anywhere but api.github.com)</em></span>
+        <input id="ghToken" type="password" placeholder="ghp_…" autocomplete="off">
+      </label>
+
+      <label class="field">
+        <span>GitHub username <em>(for “assigned to me” / “created by me”)</em></span>
+        <input id="ghUser" type="text" placeholder="octocat" autocomplete="off">
+      </label>
+
+      <label class="field">
+        <span>Google Calendar client ID <em>(OAuth client of type “Web application”)</em></span>
+        <input id="gcalClientId" type="text" placeholder="…apps.googleusercontent.com" autocomplete="off" spellcheck="false">
+      </label>
+
+      <div class="field">
+        <span>Redirect URI <em>(add this under “Authorised redirect URIs” in Google Cloud)</em></span>
+        <div class="copy-row">
+          <input id="gcalRedirect" class="copy-field" type="text" readonly spellcheck="false">
+          <button id="gcalCopy" class="btn" type="button">Copy</button>
+        </div>
+      </div>
+
+      <label class="field">
+        <span>Grid snap (px)</span>
+        <input id="gridSize" type="number" min="1" max="40" step="1">
+      </label>
+
+      <div class="field row">
+        <button id="exportBtn" class="btn">Export layout</button>
+        <button id="importBtn" class="btn">Import layout</button>
+        <button id="resetBtn" class="btn danger">Reset dashboard</button>
+      </div>
+
+      <textarea id="ioBox" class="io" placeholder="Layout JSON appears here on export; paste here then press Import." spellcheck="false"></textarea>
+
+      <div class="sheet-actions">
+        <span id="ghStatus" class="muted"></span>
+        <button id="settingsClose" class="btn primary">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="ctxmenu" class="ctxmenu" hidden></div>
+
+  <script type="module" src="js/newtab.js"></script>
+</body>
+</html>

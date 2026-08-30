@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Homebase",
+  "version": "2.0.0",
+  "description": "Everything you open, in one place — a drag-and-drop new tab with resizable bookmark panels, a GitHub PR feed, and a fast command bar.",
+  "permissions": [
+    "bookmarks",
+    "favicon",
+    "storage",
+    "identity"
+  ],
+  "host_permissions": [
+    "https://api.github.com/*",
+    "https://api.open-meteo.com/*",
+    "https://geocoding-api.open-meteo.com/*",
+    "https://calendar.google.com/*",
+    "https://www.googleapis.com/*",
+    "https://oauth2.googleapis.com/*"
+  ],
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  }
+}
