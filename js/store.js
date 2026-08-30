@@ -53,7 +53,8 @@ const DEFAULTS = {
     locked: false,
     ghToken: '',
     ghUser: '',
-    gcalClientId: ''
+    gcalClientId: '',
+    gcalAccount: ''
   }
 };
 

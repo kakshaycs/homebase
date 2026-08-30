@@ -852,6 +852,11 @@ async function renderCalendar(panel, node, gen = generation.get(panel.id)) {
         return;
       }
       list = await gcal.fetchEvents(cfg.calendarId, from, to);
+      if (!state.settings.gcalAccount) {
+        gcal.accountEmail()
+          .then(email => { if (email) { state.settings.gcalAccount = email; save(); } })
+          .catch(() => { /* display only */ });
+      }
     }
   } catch (err) {
     if (isStale(panel.id, gen)) return;
@@ -1443,7 +1448,8 @@ function startDrag(e, panel, node) {
   node.setPointerCapture(e.pointerId);
 
   const move = ev => {
-    panel.x = Math.max(0, snap(ox + ev.clientX - startX, grid));
+    const maxX = Math.max(0, canvas.clientWidth - panel.w - 12);
+    panel.x = Math.min(maxX, Math.max(0, snap(ox + ev.clientX - startX, grid)));
     panel.y = Math.max(0, snap(oy + ev.clientY - startY, grid));
     node.style.left = panel.x + 'px';
     node.style.top = panel.y + 'px';
@@ -1469,7 +1475,8 @@ function startResize(e, panel, node, dir) {
   node.setPointerCapture(e.pointerId);
 
   const move = ev => {
-    if (dir !== 's') panel.w = Math.max(180, snap(ow + ev.clientX - startX, grid));
+    const maxW = Math.max(180, canvas.clientWidth - panel.x - 12);
+    if (dir !== 's') panel.w = Math.min(maxW, Math.max(180, snap(ow + ev.clientX - startX, grid)));
     if (dir !== 'e') panel.h = Math.max(78, snap(oh + ev.clientY - startY, grid));
     node.style.width = panel.w + 'px';
     node.style.height = panel.h + 'px';
@@ -1580,9 +1587,19 @@ function openMenu(panel, node, x, y) {
   } else if (panel.type === 'calendar') {
     const cfg = calConfig(panel);
     if (cfg.mode === 'oauth') {
+      if (state.settings.gcalAccount) {
+        ctxmenu.appendChild(el('div', { class: 'menu-label', text: state.settings.gcalAccount }));
+      }
+      add('Switch Google account…', async () => {
+        await gcal.signOut({ forgetAccount: true });
+        try {
+          await gcal.getToken({ interactive: true });     // prompt=select_account
+        } catch { /* the panel shows the error */ }
+        renderBody(panel, node);
+      });
       add('Choose calendar…', () => chooseCalendar(panel, node));
       add('Google account settings…', () => calendarSetup(panel, node));
-      add('Sign out of Google', async () => { await gcal.signOut(); renderBody(panel, node); });
+      add('Sign out of Google', async () => { await gcal.signOut({ forgetAccount: true }); renderBody(panel, node); });
       add('Use an iCal URL instead', () => { cfg.mode = 'ics'; save(); renderBody(panel, node); });
     } else {
       add('Change calendar URL…', () => icsSetup(panel, node));
@@ -1754,4 +1771,37 @@ export function fitToWindow() {
   }
   save();
   renderAll();
+}
+
+/* ---------------------------------------------------- keep inside the width */
+
+/** Pull one panel inside the canvas: never wider than the viewport, never
+    positioned past the right edge. Returns true if anything changed. */
+function clampToCanvas(panel, avail) {
+  const before = `${panel.x}:${panel.w}`;
+  panel.w = Math.max(180, Math.min(panel.w, avail - 24));
+  panel.x = Math.max(0, Math.min(panel.x, avail - panel.w - 12));
+  return before !== `${panel.x}:${panel.w}`;
+}
+
+/** Called on load and on every window resize: guarantees no horizontal scroll
+    without reflowing the arrangement — panels that stick out are pulled in,
+    everything else is left exactly where it was. */
+export function fitWidth() {
+  if (isStacked()) return false;
+  const avail = canvas.clientWidth;
+  if (!avail) return false;
+
+  let changed = false;
+  for (const panel of state.panels) {
+    if (!clampToCanvas(panel, avail)) continue;
+    changed = true;
+    const node = canvas.querySelector(`.panel[data-id="${panel.id}"]`);
+    if (node) {
+      node.style.left = panel.x + 'px';
+      node.style.width = panel.w + 'px';
+    }
+  }
+  if (changed) save();
+  return changed;
 }

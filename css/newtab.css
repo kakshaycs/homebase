@@ -269,7 +269,7 @@ kbd {
 
 /* isolate: panel z-indices can never escape this box and cover the topbar,
    the command bar, or the context menu */
-.canvas { position: relative; z-index: 1; isolation: isolate; flex: 1; overflow: auto; padding: 0 0 400px; }
+.canvas { position: relative; z-index: 1; isolation: isolate; flex: 1; overflow-x: hidden; overflow-y: auto; padding: 0 0 400px; }
 .canvas.dropping {
   background-image: radial-gradient(color-mix(in srgb, var(--accent) 30%, transparent) 1px, transparent 1px);
   background-size: 16px 16px;

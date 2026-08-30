@@ -132,8 +132,14 @@ implicit flow. Tokens last about an hour and are renewed silently while you have
 Google session; if renewal fails the panel shows a **Sign in with Google** button.
 Scope requested is `calendar.readonly` — read-only, nothing else.
 
-Menu: **Choose calendar…** (lists every calendar you can read), hide declined,
-hide all-day, look ahead 6/12/24h, sign out.
+Menu: the connected account is shown at the top, plus **Switch Google account…**,
+**Choose calendar…** (lists every calendar you can read), hide declined, hide all-day,
+look ahead 6/12/24h, sign out.
+
+> **Several Google accounts in one browser?** Sign-in forces the account chooser
+> (`prompt=select_account`) rather than letting Google pick the default silently, and
+> the chosen account is remembered as a `login_hint` for silent token renewals. If it
+> ever latches onto the wrong one, use **Switch Google account…**.
 
 > Because the consent screen is in *Testing*, Google shows an "unverified app" warning —
 > **Advanced → Go to app** to proceed. That is expected for a personal-use extension.
@@ -177,6 +183,11 @@ rather than appearing to work until the next new tab. An *uploaded* wallpaper is
 included (it is a multi-megabyte data URL); re-pick it on the new machine.
 
 ### Small windows
+**The dashboard never scrolls sideways.** On load and on every window resize, any panel
+that would stick out past the right edge is narrowed and pulled back in — your vertical
+arrangement is untouched, only the panels that overflow are adjusted. Dragging and
+resizing are clamped to the window too, so overflow cannot be created in the first place.
+
 Below 900px the free canvas is abandoned and panels **stack into a single column** —
 fixed pixel coordinates laid out for a wide screen would otherwise just be clipped.
 Dragging and resizing are disabled while stacked, and your saved positions are left

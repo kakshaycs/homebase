@@ -45,7 +45,19 @@ function authUrl(interactive) {
   u.searchParams.set('redirect_uri', redirectUri());
   u.searchParams.set('scope', SCOPE);
   u.searchParams.set('include_granted_scopes', 'true');
-  if (!interactive) u.searchParams.set('prompt', 'none');
+
+  if (!interactive) {
+    u.searchParams.set('prompt', 'none');
+    // renew silently against the account we already connected, not the default one
+    const known = (state.settings.gcalAccount || '').trim();
+    if (known) u.searchParams.set('login_hint', known);
+  } else {
+    // With several Google accounts in the browser, Google otherwise picks the
+    // default silently. Force the chooser every time.
+    u.searchParams.set('prompt', 'select_account');
+    const hint = (state.settings.gcalAccount || '').trim();
+    if (hint) u.searchParams.set('login_hint', hint);
+  }
   return u.toString();
 }
 
@@ -100,9 +112,13 @@ export async function getToken({ interactive = false } = {}) {
   return inflight;
 }
 
-export async function signOut() {
+export async function signOut({ forgetAccount = false } = {}) {
   token = null;
   await chrome.storage.local.remove('gcalToken');
+  if (forgetAccount) {
+    state.settings.gcalAccount = '';
+    save();
+  }
 }
 
 export async function isSignedIn() {
@@ -125,6 +141,12 @@ async function api(path, { interactive = false } = {}) {
     throw new Error(diagnostics.lastError);
   }
   return res.json();
+}
+
+/** The email of the account the current token belongs to (primary calendar id). */
+export async function accountEmail(opts) {
+  const data = await api('/calendars/primary', opts);
+  return data.id || '';
 }
 
 export async function listCalendars(opts) {

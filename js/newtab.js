@@ -1,5 +1,5 @@
 import { state, load, save, seedFromBookmarks, THEMES, PANEL_TYPES, WALLPAPERS, wallpaperSrc, storageBytes } from './store.js';
-import { renderAll, addPanel, refreshAllGithub, closeMenu, addLinkToActivePanel, fitToWindow, isStacked } from './panels.js';
+import { renderAll, addPanel, refreshAllGithub, closeMenu, addLinkToActivePanel, fitToWindow, isStacked, fitWidth } from './panels.js';
 import { loadLibrary } from './library.js';
 import { openCmd, closeCmd } from './search.js';
 import * as gh from './github.js';
@@ -484,5 +484,13 @@ canvas.addEventListener('drop', e => {
   await loadLibrary();
   if (!state.panels.length) await seedFromBookmarks(canvas.clientWidth || 1200);
   renderAll();
+  fitWidth();
+
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(fitWidth, 180);
+  });
+
   setInterval(refreshAllGithub, 5 * 60 * 1000);
 })();
