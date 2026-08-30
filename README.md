@@ -183,18 +183,16 @@ rather than appearing to work until the next new tab. An *uploaded* wallpaper is
 included (it is a multi-megabyte data URL); re-pick it on the new machine.
 
 ### Small windows
-**The dashboard never scrolls sideways.** On load and on every window resize, any panel
-that would stick out past the right edge is narrowed and pulled back in — your vertical
-arrangement is untouched, only the panels that overflow are adjusted. Dragging and
-resizing are clamped to the window too, so overflow cannot be created in the first place.
+**The dashboard never scrolls sideways.** When the layout is wider than the window, the
+canvas is **scaled down to fit** — your saved panel geometry is never rewritten, so a
+narrow window is a temporary view and the full-size layout returns the moment you widen
+it again. Dragging and resizing account for the scale, and are clamped so overflow cannot
+be created in the first place.
 
 Below 900px the free canvas is abandoned and panels **stack into a single column** —
 fixed pixel coordinates laid out for a wide screen would otherwise just be clipped.
 Dragging and resizing are disabled while stacked, and your saved positions are left
 untouched, so widening the window restores the layout exactly.
-
-For a window that is merely narrower than usual, **✎ Edit → ⤢ Fit panels to this window**
-reflows everything to the current width instead.
 
 ### Locking the layout
 The **🔓 / 🔒** button in the topbar (or `l`) locks the dashboard: panels can no longer be

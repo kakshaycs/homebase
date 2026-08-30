@@ -1448,9 +1448,10 @@ function startDrag(e, panel, node) {
   node.setPointerCapture(e.pointerId);
 
   const move = ev => {
+    const z = currentZoom();
     const maxX = Math.max(0, canvas.clientWidth - panel.w - 12);
-    panel.x = Math.min(maxX, Math.max(0, snap(ox + ev.clientX - startX, grid)));
-    panel.y = Math.max(0, snap(oy + ev.clientY - startY, grid));
+    panel.x = Math.min(maxX, Math.max(0, snap(ox + (ev.clientX - startX) / z, grid)));
+    panel.y = Math.max(0, snap(oy + (ev.clientY - startY) / z, grid));
     node.style.left = panel.x + 'px';
     node.style.top = panel.y + 'px';
   };
@@ -1475,9 +1476,10 @@ function startResize(e, panel, node, dir) {
   node.setPointerCapture(e.pointerId);
 
   const move = ev => {
+    const z = currentZoom();
     const maxW = Math.max(180, canvas.clientWidth - panel.x - 12);
-    if (dir !== 's') panel.w = Math.min(maxW, Math.max(180, snap(ow + ev.clientX - startX, grid)));
-    if (dir !== 'e') panel.h = Math.max(78, snap(oh + ev.clientY - startY, grid));
+    if (dir !== 's') panel.w = Math.min(maxW, Math.max(180, snap(ow + (ev.clientX - startX) / z, grid)));
+    if (dir !== 'e') panel.h = Math.max(78, snap(oh + (ev.clientY - startY) / z, grid));
     node.style.width = panel.w + 'px';
     node.style.height = panel.h + 'px';
   };
@@ -1752,56 +1754,24 @@ export function addLinkToActivePanel() {
   showAddForm(target.panel, target.node);
 }
 
-/** Reflow every panel into the current canvas width, keeping reading order. */
-export function fitToWindow() {
-  const W = canvas.clientWidth;
-  const PAD = 16, GAP = 14;
-  const avail = Math.max(220, W - 2 * PAD);
-
-  const ordered = [...state.panels].sort((a, b) => (a.y - b.y) || (a.x - b.x));
-  let x = PAD, y = PAD, rowH = 0;
-
-  for (const p of ordered) {
-    p.w = Math.min(p.w, avail);
-    if (x > PAD && x + p.w > W - PAD) { x = PAD; y += rowH + GAP; rowH = 0; }
-    p.x = x;
-    p.y = y;
-    x += p.w + GAP;
-    rowH = Math.max(rowH, p.h);
-  }
-  save();
-  renderAll();
-}
-
 /* ---------------------------------------------------- keep inside the width */
 
-/** Pull one panel inside the canvas: never wider than the viewport, never
-    positioned past the right edge. Returns true if anything changed. */
-function clampToCanvas(panel, avail) {
-  const before = `${panel.x}:${panel.w}`;
-  panel.w = Math.max(180, Math.min(panel.w, avail - 24));
-  panel.x = Math.max(0, Math.min(panel.x, avail - panel.w - 12));
-  return before !== `${panel.x}:${panel.w}`;
+export function currentZoom() {
+  const z = parseFloat(canvas.style.zoom);
+  return Number.isFinite(z) && z > 0 ? z : 1;
 }
 
-/** Called on load and on every window resize: guarantees no horizontal scroll
-    without reflowing the arrangement — panels that stick out are pulled in,
-    everything else is left exactly where it was. */
+/** Fit the layout horizontally by SCALING the canvas — never by rewriting panel
+    geometry. Your saved x/y/w/h are the source of truth and are never touched,
+    so a narrow window is a temporary view, not a permanent change. */
 export function fitWidth() {
-  if (isStacked()) return false;
-  const avail = canvas.clientWidth;
-  if (!avail) return false;
+  if (isStacked()) { canvas.style.zoom = ''; return; }
 
-  let changed = false;
-  for (const panel of state.panels) {
-    if (!clampToCanvas(panel, avail)) continue;
-    changed = true;
-    const node = canvas.querySelector(`.panel[data-id="${panel.id}"]`);
-    if (node) {
-      node.style.left = panel.x + 'px';
-      node.style.width = panel.w + 'px';
-    }
-  }
-  if (changed) save();
-  return changed;
+  const viewport = canvas.parentElement?.clientWidth || 0;
+  if (!viewport || !state.panels.length) return;
+
+  const content = Math.max(...state.panels.map(p => p.x + p.w)) + 24;
+  const z = Math.min(1, viewport / content);
+
+  canvas.style.zoom = z < 0.995 ? String(Math.max(0.45, z)) : '';
 }

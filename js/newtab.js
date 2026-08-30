@@ -1,5 +1,5 @@
 import { state, load, save, seedFromBookmarks, THEMES, PANEL_TYPES, WALLPAPERS, wallpaperSrc, storageBytes } from './store.js';
-import { renderAll, addPanel, refreshAllGithub, closeMenu, addLinkToActivePanel, fitToWindow, isStacked, fitWidth } from './panels.js';
+import { renderAll, addPanel, refreshAllGithub, closeMenu, addLinkToActivePanel, fitWidth } from './panels.js';
 import { loadLibrary } from './library.js';
 import { openCmd, closeCmd } from './search.js';
 import * as gh from './github.js';
@@ -29,10 +29,6 @@ document.getElementById('addBtn').addEventListener('click', e => {
     }));
   }
   ctxmenu.appendChild(el('hr'));
-  ctxmenu.appendChild(el('button', {
-    text: '⤢  Fit panels to this window',
-    onclick: () => { closeMenu(); fitToWindow(); }
-  }));
   ctxmenu.appendChild(el('button', {
     text: '🖼  Wallpaper…',
     onclick: () => { closeMenu(); openSettings('wallpaperPicker'); }
